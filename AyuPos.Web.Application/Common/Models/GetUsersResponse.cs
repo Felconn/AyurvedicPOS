@@ -1,0 +1,10 @@
+namespace AyuPos.Web.Application.Common;
+
+public class GetUsersResponse
+{
+    public string Id { get; set; }
+    public string UserName { get; set; }
+    public UserProfile? PersonalData { get; set; }
+    public string[]? Roles { get; set; }
+    public bool DeactivationStatus { get; set; }
+}
