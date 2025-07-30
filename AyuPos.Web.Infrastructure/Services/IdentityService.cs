@@ -81,10 +81,10 @@ public class IdentityService : IIdentityService
         return userCreationData.ToApplicationResult();
     }
 
-    public async Task<LoginResponse> SignInAsync(string uesrId, string password,
+    public async Task<LoginResponse> SignInAsync(string userId, string password,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetUserAsync(uesrId, cancellationToken);
+        var user = await GetUserAsync(userId, cancellationToken);
         user.Throw("This account has been deactivated, Please contact the administrator", null)
             .IfTrue(user.IsDeactivated);
 

@@ -53,7 +53,7 @@ public class UserController : BaseController
     public async Task<IActionResult> InviteUser([FromBody] InviteUserRequest request, CancellationToken cancellationToken)
     {
         var result = await _identityService.InviteUserAsync(
-            request.UserName,
+            request.UserId,
             request.Role,
             request.Password,
             request.FirstName,
@@ -159,7 +159,7 @@ public class UserController : BaseController
 
 public class InviteUserRequest
 {
-    public string UserName { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public string? FirstName { get; set; }

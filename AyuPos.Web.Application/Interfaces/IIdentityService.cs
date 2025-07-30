@@ -7,7 +7,7 @@ public interface IIdentityService
 {
     Task<string> GetUserNameAsync(string? userId,CancellationToken cancellationToken = default);
     Task<string> GetUserIdAsync(string userId,CancellationToken cancellationToken = default);
-    Task<LoginResponse> SignInAsync(string uesrId, string password,CancellationToken cancellationToken = default);
+    Task<LoginResponse> SignInAsync(string userId, string password,CancellationToken cancellationToken = default);
     Task<Result> InviteUserAsync(string userId, string role,string password,string? firstName = null, string? lastName = null, string? nic = null, string? phone = null,CancellationToken cancellationToken = default);
     Task<Result> UpdateMyProfileAsync(UserProfile request,CancellationToken cancellationToken = default);
     Task<Result> AdminResetUserPasswordAsync(string userId, string newPassword, CancellationToken cancellationToken = default);
