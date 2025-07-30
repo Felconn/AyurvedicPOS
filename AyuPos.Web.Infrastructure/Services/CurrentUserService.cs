@@ -8,7 +8,6 @@ public class CurrentUserService : ICurrentUserService
 {
     private readonly IHttpContextAccessor? _httpContextAccessor;
     private string _userId = string.Empty;
-    private string _userName = string.Empty;
     private List<string> _userRoles = new();
 
     public CurrentUserService(IHttpContextAccessor? httpContextAccessor = null)
@@ -18,8 +17,6 @@ public class CurrentUserService : ICurrentUserService
 
     public string UserId => 
         _httpContextAccessor?.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? _userId;
-    
-    public string UserName => _httpContextAccessor?.HttpContext?.User.FindFirstValue(ClaimTypes.Name) ?? _userName;
 
     public List<string> UserRoles()
     {
@@ -33,12 +30,6 @@ public class CurrentUserService : ICurrentUserService
         return _userRoles;
     }
 
-    public void SetUserId(string userId,string nic)
-    {
-        _userId = userId;
-        _userName = nic;
-    }
-    
     public void SetUserId(string userId)
     {
         _userId = userId;

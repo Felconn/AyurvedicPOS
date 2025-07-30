@@ -12,14 +12,19 @@ namespace AyuPos.Web.Infrastructure;
 
 public static class ConfigureServices
 {
+    public static void ConfigureDbContextOptions(DbContextOptionsBuilder options, string connectionString)
+    {
+        options.UseNpgsql(connectionString, 
+            b => b.MigrationsAssembly("AyuPos.Web.Api"));
+        options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+        options.LogTo(Console.WriteLine);
+    }
+    
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<AppDbContext>(options =>
         {
-            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"), 
-                b => b.MigrationsAssembly("AyuPos.Web.Infrastructure"));
-            options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-            options.LogTo(Console.WriteLine);
+            ConfigureDbContextOptions(options, configuration.GetConnectionString("DefaultConnection"));
         });
         
         services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());

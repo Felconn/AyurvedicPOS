@@ -4,7 +4,12 @@ namespace AyuPos.Web.Domain.Entities.Identity;
 
 public class AppIdentityUserPersonalData : BaseEntity
 {
-    public AppIdentityUserPersonalData(string id)
+    // Parameterless constructor required by Entity Framework
+    protected AppIdentityUserPersonalData()
+    {
+    }
+    
+    public AppIdentityUserPersonalData(string id) : this()
     {
         Id = id;
     }

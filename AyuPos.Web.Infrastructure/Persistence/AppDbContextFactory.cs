@@ -2,6 +2,7 @@ using System.Linq;
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using AyuPos.Web.Application.Interfaces;
@@ -13,8 +14,18 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
     public AppDbContext CreateDbContext(string[] args)
     {
+        // Build configuration to read from appsettings.json
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddJsonFile("appsettings.Secret.json", optional: true, reloadOnChange: true)
+            .Build();
+
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-        optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Username=ashzadmin;Password=ashzDBA01.;Database=pos_system;");
+        var connectionString = configuration.GetConnectionString("DefaultConnection") 
+            ?? "Host=localhost;Port=5432;Username=ashzadmin;Password=ashzDBA01.;Database=pos_system;";
+            
+        ConfigureServices.ConfigureDbContextOptions(optionsBuilder, connectionString);
 
         var serviceProvider = new ServiceCollection()
             .AddLogging()
@@ -86,7 +97,6 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
     private class NullCurrentUserService : ICurrentUserService
     {
         public string UserId => "design-time-user";
-        public string UserName => "design-time-user";
         
         public List<string> UserRoles()
         {
@@ -95,6 +105,7 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
         
         public void SetUserId(string userId)
         {
+            
         }
         
         public void SetUserRoles(List<string> roles)

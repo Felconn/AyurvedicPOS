@@ -4,19 +4,25 @@ namespace AyuPos.Web.Domain.Entities.Identity;
 
 public class AppIdentityUser : IdentityUser
 {
-
-    public AppIdentityUser(string userName)
+    // Parameterless constructor required by Entity Framework
+    protected AppIdentityUser()
     {
-        UserName = userName;
         UserRoles = new List<AppIdentityUserRole>();
+        InvitedAt = DateTimeOffset.UtcNow;
+        
+        if (UserPersonalData == null)
+            UserPersonalData = new AppIdentityUserPersonalData(Id);
+    }
+
+    public AppIdentityUser(string userId) : this()
+    {
+        UserName = userId;
 
         if (UserPersonalData == null)
             UserPersonalData = new AppIdentityUserPersonalData(Id);
-        
-        InvitedAt = DateTimeOffset.UtcNow;
     }
     
-    public AppIdentityUser(string userName,string? firstName, string? lastName, string? phoneNumber, string? nic) : this(userName)
+    public AppIdentityUser(string userId,string? firstName, string? lastName, string? phoneNumber, string? nic) : this(userId)
     {
         UserPersonalData = new AppIdentityUserPersonalData(Id, firstName, lastName, phoneNumber, nic);
     }

@@ -1,8 +1,5 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using OneOf.Types;
 using AyuPos.Web.Application.Common;
 using AyuPos.Web.Application.Common.Constants;
 using AyuPos.Web.Application.Common.Extensions;
@@ -21,7 +18,6 @@ public class IdentityService : IIdentityService
     private readonly IJwtTokenService _tokenService;
     private readonly IAppDbContext _appDbContext;
     private readonly UserManager<AppIdentityUser> _userManager;
-    private readonly IConfiguration _configuration;
 
 
     public IdentityService(
@@ -30,7 +26,7 @@ public class IdentityService : IIdentityService
         RoleManager<AppIdentityRole> roleManager,
         ICurrentUserService currentUserService,
         IJwtTokenService tokenService,
-        IAppDbContext appDbContext, IConfiguration configuration)
+        IAppDbContext appDbContext)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -38,114 +34,58 @@ public class IdentityService : IIdentityService
         _currentUserService = currentUserService;
         _tokenService = tokenService;
         _appDbContext = appDbContext;
-        _configuration = configuration;
     }
 
 
-    public async Task<string> GetUserNameAsync(string? userId,CancellationToken cancellationToken = default)
+    public async Task<string> GetUserNameAsync(string? userId, CancellationToken cancellationToken = default)
     {
         var user = await _userManager.Users.Where(x => x.Id == userId)
             .Select(x => x.UserPersonalData!.FirstName + " " + x.UserPersonalData.LastName)
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
         return user ?? "No user exist for the given user id";
     }
-    
-    public async Task<string> GetUserIdAsync(string username,CancellationToken cancellationToken = default)
+
+    public async Task<string> GetUserIdAsync(string userId, CancellationToken cancellationToken = default)
     {
-        var userId = await _userManager.Users.Where(x => x.UserName == username)
+        var id = await _userManager.Users.Where(x => x.UserName == userId)
             .Select(x => x.Id)
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
 
-        userId.ThrowIfNull("No user exist for the given user email");
-        
-        return userId;
-    }
-    
+        id.ThrowIfNull("No user exist for the given user email");
 
-    public async Task<Result> InviteUserAsync(string userName, string role,string password,string? firstName = null, string? lastName = null, string? nic = null, string? phone = null,CancellationToken cancellationToken = default)
+        return id;
+    }
+
+
+    public async Task<Result> InviteUserAsync(string userId, string role, string password, string? firstName = null,
+        string? lastName = null, string? nic = null, string? phone = null,
+        CancellationToken cancellationToken = default)
     {
-        var isUserNameAlreadyTaken = await _userManager.Users.AnyAsync(x => x.UserName == userName, cancellationToken: cancellationToken);
-        
+        var isUserNameAlreadyTaken =
+            await _userManager.Users.AnyAsync(x => x.UserName == userId, cancellationToken: cancellationToken);
+
         if (isUserNameAlreadyTaken)
-            return Result.Failure("Username already taken");
+            return Result.Failure("UserId already taken");
 
         if (!await _roleManager.RoleExistsAsync(role))
             return Result.Failure("Invalid role");
-        
-        
-        var user = new AppIdentityUser(userName, firstName, lastName, phone, nic)
+
+
+        var user = new AppIdentityUser(userId, firstName, lastName, phone, nic)
         {
             InvitedAt = DateTime.UtcNow,
         };
-        
-        var userCreationData = await _userManager.CreateAsync(user,password);
+
+        var userCreationData = await _userManager.CreateAsync(user, password);
         await _userManager.AddToRoleAsync(user, role);
         return userCreationData.ToApplicationResult();
     }
-    
-    // public async Task<Result> InviteUserAsync(UserProfile request,string role)
-    // {
-    //     if (role != RoleConstant.Customer && _currentUserService.UserEmail == string.Empty)
-    //         throw new ArgumentException("Unauthorized user creation");
-    //     
-    //     var isEmailAlreadyTaken = await _userManager.Users.AnyAsync(x => x.Email == request.Email);
-    //     if (isEmailAlreadyTaken)
-    //         return Result.Failure("Email is already taken");
-    //     
-    //     if (!await _roleManager.RoleExistsAsync(role))
-    //         return Result.Failure("Invalid role");
-    //     
-    //     var user = new AppIdentityUser()
-    //     {
-    //         InvitedAt = DateTime.UtcNow,
-    //     };
-    //
-    //     var password = PasswordHelper.GeneratePassword();
-    //     if (_configuration.GetSection("ApplicationConfig:DefaultPassword").GetSection("SetDefault").Get<bool>())
-    //         password = _configuration.GetSection("ApplicationConfig:DefaultPassword").GetSection("Password").Get<string>();
-    //
-    //     var userCreationData = await _userManager.CreateAsync(user, password);
-    //     if (!userCreationData.Succeeded) 
-    //         return userCreationData.ToApplicationResult();
-    //         
-    //     await _userManager.AddToRoleAsync(user, role);
-    //     return Result.Success();
-    // }
-    
-    // public async Task<Result> SetInitialUserPasswordAsync(SetUserInitialPasswordRequest request)
-    // {
-    //     var user = await GetUserAsync(request.Email);
-    //     user.Throw("You dont need to change your password",null).IfFalse(user.MustChangePassword);
-    //     
-    //     var signInResult = await _signInManager.CheckPasswordSignInAsync(user, request.CurrentPassword, false);
-    //
-    //     if (!signInResult.Succeeded)
-    //         return Result.Failure(signInResult.IsLockedOut
-    //             ? "This account has been deactivated, Please contact the administrator"
-    //             : "Invalid password");
-    //
-    //     var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-    //     var pwdResResult = await _userManager.ResetPasswordAsync(user, token, request.NewPassword);
-    //     if (!pwdResResult.Succeeded) return pwdResResult.ToApplicationResult();
-    //
-    //
-    //     user.EmailConfirmed = true;
-    //     user.LastSignInAt = DateTime.UtcNow;
-    //     
-    //     var personalData =  user.UserPersonalData;
-    //     personalData.FirstName = request.FirstName;
-    //     personalData.LastName = request.LastName;
-    //     user.SetUserPersonalData(personalData);
-    //     var userUpdateResult = await _userManager.UpdateAsync(user);
-    //
-    //     return userUpdateResult.ToApplicationResult();
-    // }
-    
-    
-    public async Task<LoginResponse> SignInAsync(string username, string password,CancellationToken cancellationToken = default)
+
+    public async Task<LoginResponse> SignInAsync(string uesrId, string password,
+        CancellationToken cancellationToken = default)
     {
-        var user = await GetUserAsync(username, cancellationToken);
-        user.Throw("This account has been deactivated, Please contact the administrator",null)
+        var user = await GetUserAsync(uesrId, cancellationToken);
+        user.Throw("This account has been deactivated, Please contact the administrator", null)
             .IfTrue(user.IsDeactivated);
 
         var signInResult = await _signInManager.PasswordSignInAsync(user, password, false, false);
@@ -155,31 +95,33 @@ public class IdentityService : IIdentityService
 
         if (!signInResult.Succeeded)
             return LoginResponse.Failure("Invalid email or password");
-        
+
         user.LastSignInAt = DateTime.UtcNow;
         await _userManager.UpdateAsync(user);
         return LoginResponse.Success(await GetTokenAsync(user));
     }
     
-    
-    // public async Task<Result> ForgetPasswordAsync(string email, string url)
-    // {
-    //     var user = await GetUserAsync(email);
-    //     var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-    //
-    //     var callBackUrl = $"{url}?email={email}&token={Base64UrlEncoder.Encode(token)}";
-    //     return await _emailService.SendPasswordResetEmailAsync(callBackUrl, email);
-    // }
-    
-    public async Task<Result> ResetPasswordAsync(string token, string nic, string password,CancellationToken cancellationToken = default)
+    public async Task<Result> AdminResetUserPasswordAsync(string userId, string newPassword, CancellationToken cancellationToken = default)
     {
-        var user = await GetUserAsync(nic, cancellationToken);
-        var pwdResResult = await _userManager.ResetPasswordAsync(user, Base64UrlEncoder.Decode(token), password);
-        return pwdResResult.ToApplicationResult();
+        var isAdmin = _currentUserService.UserRoles().Any(x => x is RoleConstant.Admin or RoleConstant.SuperAdmin);
+        if (!isAdmin)
+            return Result.Failure("Only administrators can reset user passwords");
+
+
+        var user = await GetUserAsync(userId, cancellationToken);
+        if (user == null)
+            return Result.Failure("User not found");
+        
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+
+        return result.ToApplicationResult();
     }
 
     public Task<List<string>> GetAllRolesAsync()
     {
+        var userId = _currentUserService.UserId;
+        
         return _roleManager.Roles
             .AsNoTracking()
             .Select(x => x.Name!)
@@ -188,7 +130,6 @@ public class IdentityService : IIdentityService
 
     public async Task<List<GetUsersResponse>> GetAllUsers(CancellationToken cancellationToken = default)
     {
-
         return await _userManager.Users
             .AsSingleQuery()
             .Include(x => x.UserRoles)!
@@ -196,26 +137,26 @@ public class IdentityService : IIdentityService
             .Select(x => new GetUsersResponse
             {
                 Id = x.Id,
-                UserName = x.UserName!,
+                UserId = x.UserName!,
                 PersonalData = UserProfile.Create(x.UserPersonalData),
-                Roles = x.UserRoles.Where(y=>y.Role.Name != null).Select(y => y.Role.Name!).ToArray(),
+                Roles = x.UserRoles.Where(y => y.Role.Name != null).Select(y => y.Role.Name!).ToArray(),
                 DeactivationStatus = x.IsDeactivated,
             })
             .ToListAsync(cancellationToken: cancellationToken);
-
     }
-    
-    public async Task<Result> DisableEnableUser(string userId,bool isDeactivate,CancellationToken cancellationToken = default)
+
+    public async Task<Result> DisableEnableUser(string userId, bool isDeactivate,
+        CancellationToken cancellationToken = default)
     {
         if (_currentUserService.UserRoles().Any(x => x != RoleConstant.Admin && x != RoleConstant.SuperAdmin))
             return Result.Failure("User haven't access for the function!");
 
         var user = await _userManager.Users
-            .Include(x=>x.UserRoles!)
-            .ThenInclude(x=>x.Role)
-            .FirstOrDefaultAsync(x=>x.Id == userId, cancellationToken: cancellationToken);
-        
-        if(user is null)
+            .Include(x => x.UserRoles!)
+            .ThenInclude(x => x.Role)
+            .FirstOrDefaultAsync(x => x.Id == userId, cancellationToken: cancellationToken);
+
+        if (user is null)
             return Result.Failure("No user exist for the given user id");
 
         if (user.UserRoles!.Any(x => x.Role.Name == RoleConstant.SuperAdmin))
@@ -223,24 +164,24 @@ public class IdentityService : IIdentityService
 
         if (user.IsDeactivated == isDeactivate)
             return Result.Failure(isDeactivate ? $"User already deactivated" : $"User already activated");
-        
+
         user.IsDeactivated = isDeactivate;
         await _userManager.UpdateAsync(user);
         return Result.Success();
     }
-    
-    public async Task<Result> UpdateMyProfileAsync(UserProfile request,CancellationToken cancellationToken = default)
+
+    public async Task<Result> UpdateMyProfileAsync(UserProfile request, CancellationToken cancellationToken = default)
     {
-        var user = await GetUserAsync(_currentUserService.UserName, cancellationToken);
-        user.ThrowIfNull("No user exists",null);
-        var personalData = user.UserPersonalData ?? new AppIdentityUserPersonalData(user.Id); 
+        var user = await GetUserAsync(_currentUserService.UserId, cancellationToken);
+        user.ThrowIfNull("No user exists", null);
+        var personalData = user.UserPersonalData ?? new AppIdentityUserPersonalData(user.Id);
         request.MatchTo(personalData);
-        
+
         await _userManager.UpdateAsync(user);
         await _appDbContext.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
-    
+
     public async Task<GetUsersResponse?> GetMyProfileAsync(CancellationToken cancellationToken = default)
     {
         return await _userManager.Users
@@ -251,7 +192,7 @@ public class IdentityService : IIdentityService
             .Select(x => new GetUsersResponse
             {
                 Id = x.Id,
-                UserName = x.UserName!,
+                UserId = x.UserName!,
                 PersonalData = UserProfile.Create(x.UserPersonalData),
                 Roles = x.UserRoles.Where(y => y.Role.Name != null).Select(y => y.Role.Name!).ToArray(),
                 DeactivationStatus = x.IsDeactivated,
@@ -259,7 +200,8 @@ public class IdentityService : IIdentityService
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
     }
 
-    public async Task<List<GetUsersResponse>> GetUsersByRoleAsync(string role,CancellationToken cancellationToken = default)
+    public async Task<List<GetUsersResponse>> GetUsersByRoleAsync(string role,
+        CancellationToken cancellationToken = default)
     {
         return await _userManager.Users
             .Include(x => x.UserRoles)
@@ -267,7 +209,7 @@ public class IdentityService : IIdentityService
             .Select(x => new GetUsersResponse
             {
                 Id = x.Id,
-                UserName = x.UserName!,
+                UserId = x.UserName!,
                 PersonalData = UserProfile.Create(x.UserPersonalData),
                 Roles = x.UserRoles.Where(y => y.Role.Name != null).Select(y => y.Role.Name!).ToArray(),
                 DeactivationStatus = x.IsDeactivated,
@@ -275,13 +217,15 @@ public class IdentityService : IIdentityService
             .ToListAsync(cancellationToken: cancellationToken);
     }
 
-    public async Task<Result> ChangePasswordAsync(string currentPwd, string password,CancellationToken cancellationToken = default)
+    public async Task<Result> ChangePasswordAsync(string currentPwd, string password,
+        CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByIdAsync(_currentUserService.UserId);
 
-        currentPwd.Throw("Current password and new password can't be same")
-            .IfEquals(password);
-        
+        user.ThrowIfNull("No user exists", null);
+
+        currentPwd.Throw("Current password and new password can't be same").IfEquals(password);
+
         var currentPwdCheckResult = await _userManager.CheckPasswordAsync(user, currentPwd);
         if (!currentPwdCheckResult) return Result.Failure("Current password is invalid!");
 
@@ -290,14 +234,15 @@ public class IdentityService : IIdentityService
 
         return res.ToApplicationResult();
     }
-    
-    public async Task<TokenResponse> GenerateTokenFromRefreshTokenAsync(string refreshToken,CancellationToken cancellationToken = default)
+
+    public async Task<TokenResponse> GenerateTokenFromRefreshTokenAsync(string refreshToken,
+        CancellationToken cancellationToken = default)
     {
-        var user = await GetUserAsync(_currentUserService.UserName,cancellationToken);
-        var isRefreshTokenResult = await _tokenService.ValidateRefreshTokenAsync(user,refreshToken);
+        var user = await GetUserAsync(_currentUserService.UserId, cancellationToken);
+        var isRefreshTokenResult = await _tokenService.ValidateRefreshTokenAsync(user, refreshToken);
 
         isRefreshTokenResult.Throw("Invalid refresh token", null).IfFalse();
-        
+
         var token = await GetTokenAsync(user);
         return new TokenResponse
         {
@@ -308,21 +253,22 @@ public class IdentityService : IIdentityService
 
 
     // Private Methods
-    private async Task<AppIdentityUser> GetUserAsync(string username,CancellationToken cancellationToken = default)
+    private async Task<AppIdentityUser> GetUserAsync(string userId, CancellationToken cancellationToken = default)
     {
-        var user = await _userManager.Users.FirstOrDefaultAsync(x=>x.UserName == username, cancellationToken: cancellationToken);
-        user.ThrowIfNull("Invalid Username",null);
+        var user = await _userManager.Users.FirstOrDefaultAsync(x => x.UserName == userId,
+            cancellationToken: cancellationToken);
+        user.ThrowIfNull("Invalid UserId", null);
         // await CheckAndSetUserPersonalDataAsync(user);
         return user;
     }
-    
+
     private async Task<TokenResponse> GetTokenAsync(AppIdentityUser user)
     {
         var roles = await _userManager.GetRolesAsync(user);
 
         return new TokenResponse
         {
-            AccessToken = _tokenService.GetAccessToken(user.UserName!, user.Id,roles),
+            AccessToken = _tokenService.GetAccessToken(user.UserName!, user.Id, roles),
             RefreshToken = await _tokenService.GenerateRefreshTokenAsync(user)
         };
     }
@@ -337,7 +283,6 @@ public class IdentityService : IIdentityService
 
     public async Task<Result> UpdateUsersRoleAsync(RoleChangeRequest roleChangeRequest)
     {
-        
         var selector = await _userManager.Users
             .AsSingleQuery()
             .Where(x => x.Id == roleChangeRequest.UserId)
@@ -348,15 +293,14 @@ public class IdentityService : IIdentityService
                 User = x,
                 Role = x.UserRoles.Select(y => y.Role.Name).First()
             }).FirstOrDefaultAsync();
-        
+
         var role = await _roleManager.FindByNameAsync(roleChangeRequest.RoleName);
-        
+
         selector.ThrowIfNull("No user exist for the given user id", null);
         role.ThrowIfNull("No role exists for given role name", null);
-        
+
         await _userManager.RemoveFromRoleAsync(selector.User, selector.Role);
         await _userManager.AddToRoleAsync(selector.User, role.Name);
         return Result.Success();
-
     }
 }

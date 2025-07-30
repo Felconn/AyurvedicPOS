@@ -54,6 +54,20 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+var allowedOrigins = builder.Configuration.GetSection("ApplicationConfig:AllowedHosts").Get<string[]>() ?? new string[1];
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigins",
+        policy =>
+        {
+            policy.WithOrigins(allowedOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        });
+});
+
 // Configure ApplicationConfig
 var applicationConfig = builder.Configuration.GetSection("ApplicationConfig").Get<ApplicationConfig>()!;
 builder.Services.AddSingleton(applicationConfig);

@@ -125,7 +125,7 @@ public class UserController : BaseController
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
     {
-        var result = await _identityService.ResetPasswordAsync(request.Token, request.Nic, request.NewPassword, cancellationToken);
+        var result = await _identityService.AdminResetUserPasswordAsync(request.UserId, request.NewPassword, cancellationToken);
         
         if (!result.Succeeded)
         {
@@ -181,7 +181,6 @@ public class ChangePasswordRequest
 
 public class ResetPasswordRequest
 {
-    public string Token { get; set; } = string.Empty;
-    public string Nic { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
     public string NewPassword { get; set; } = string.Empty;
 }
