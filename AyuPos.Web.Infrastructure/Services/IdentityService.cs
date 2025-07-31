@@ -14,7 +14,6 @@ public class IdentityService : IIdentityService
 {
     private readonly ICurrentUserService _currentUserService;
     private readonly RoleManager<AppIdentityRole> _roleManager;
-    private readonly SignInManager<AppIdentityUser> _signInManager;
     private readonly IJwtTokenService _tokenService;
     private readonly IAppDbContext _appDbContext;
     private readonly UserManager<AppIdentityUser> _userManager;
@@ -22,14 +21,12 @@ public class IdentityService : IIdentityService
 
     public IdentityService(
         UserManager<AppIdentityUser> userManager,
-        SignInManager<AppIdentityUser> signInManager,
         RoleManager<AppIdentityRole> roleManager,
         ICurrentUserService currentUserService,
         IJwtTokenService tokenService,
         IAppDbContext appDbContext)
     {
         _userManager = userManager;
-        _signInManager = signInManager;
         _roleManager = roleManager;
         _currentUserService = currentUserService;
         _tokenService = tokenService;
@@ -88,14 +85,23 @@ public class IdentityService : IIdentityService
         user.Throw("This account has been deactivated, Please contact the administrator", null)
             .IfTrue(user.IsDeactivated);
 
-        var signInResult = await _signInManager.PasswordSignInAsync(user, password, false, false);
-
-        if (signInResult.IsLockedOut)
+        // Check if the user is locked out
+        if (await _userManager.IsLockedOutAsync(user))
             return LoginResponse.Failure("This account has been locked, Please contact the administrator");
 
-        if (!signInResult.Succeeded)
+        // Verify password without signing in (since we're using JWT, not cookies)
+        var isPasswordValid = await _userManager.CheckPasswordAsync(user, password);
+        
+        if (!isPasswordValid)
+        {
+            // Increment failed access attempt count
+            await _userManager.AccessFailedAsync(user);
             return LoginResponse.Failure("Invalid email or password");
+        }
 
+        // Reset access failed count on successful authentication
+        await _userManager.ResetAccessFailedCountAsync(user);
+        
         user.LastSignInAt = DateTime.UtcNow;
         await _userManager.UpdateAsync(user);
         return LoginResponse.Success(await GetTokenAsync(user));

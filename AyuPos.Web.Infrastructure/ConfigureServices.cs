@@ -43,7 +43,6 @@ public static class ConfigureServices
         .AddRoles<AppIdentityRole>()
         .AddEntityFrameworkStores<AppDbContext>()
         .AddDefaultTokenProviders()
-        .AddSignInManager<SignInManager<AppIdentityUser>>()
         .AddUserManager<UserManager<AppIdentityUser>>()
         .AddRoleManager<RoleManager<AppIdentityRole>>();
         
