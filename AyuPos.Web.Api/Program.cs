@@ -1,4 +1,5 @@
 using System.Text;
+using AyuPos.Web.Api.Middlewares;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -91,6 +92,50 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(applicationConfig.Secret)),
         ClockSkew = TimeSpan.Zero
     };
+    
+    // Prevent redirect to login page for API calls and return Result type
+    options.Events = new JwtBearerEvents
+    {
+        OnChallenge = context =>
+        {
+            // Skip the default logic.
+            context.HandleResponse();
+            
+            context.Response.StatusCode = 401;
+            context.Response.ContentType = "application/json";
+            
+            var result = Result.Failure("Unauthorized", "Invalid or missing authentication token");
+            var jsonOptions = new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+            };
+            var jsonResult = System.Text.Json.JsonSerializer.Serialize(result, jsonOptions);
+            
+            return context.Response.WriteAsync(jsonResult);
+        },
+        OnAuthenticationFailed = context =>
+        {
+            if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+            {
+                context.Response.Headers.Add("Token-Expired", "true");
+            }
+            return Task.CompletedTask;
+        },
+        OnForbidden = context =>
+        {
+            context.Response.StatusCode = 403;
+            context.Response.ContentType = "application/json";
+            
+            var result = Result.Failure("Forbidden", "You do not have permission to access this resource");
+            var jsonOptions = new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+            };
+            var jsonResult = System.Text.Json.JsonSerializer.Serialize(result, jsonOptions);
+            
+            return context.Response.WriteAsync(jsonResult);
+        }
+    };
 });
 
 builder.Services.AddAuthorization();
@@ -135,6 +180,8 @@ app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseMiddleware<ErrorHandlerMiddleware>();
 
 app.MapControllers();
 

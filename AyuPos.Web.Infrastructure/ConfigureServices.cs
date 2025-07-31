@@ -31,8 +31,7 @@ public static class ConfigureServices
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<AuditableEntitySaveChangesInterceptor>();
         
-        // Add Identity services
-        services.AddIdentity<AppIdentityUser, AppIdentityRole>(options =>
+        services.AddIdentityCore<AppIdentityUser>(options =>
         {
             options.Password.RequireDigit = false;
             options.Password.RequiredLength = 4;
@@ -41,8 +40,12 @@ public static class ConfigureServices
             options.Password.RequireLowercase = false;
             options.User.RequireUniqueEmail = false;
         })
+        .AddRoles<AppIdentityRole>()
         .AddEntityFrameworkStores<AppDbContext>()
-        .AddDefaultTokenProviders();
+        .AddDefaultTokenProviders()
+        .AddSignInManager<SignInManager<AppIdentityUser>>()
+        .AddUserManager<UserManager<AppIdentityUser>>()
+        .AddRoleManager<RoleManager<AppIdentityRole>>();
         
         // Add JWT and Identity services
         services.AddScoped<IIdentityService, IdentityService>();

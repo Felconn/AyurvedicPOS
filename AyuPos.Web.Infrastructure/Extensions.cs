@@ -1,7 +1,7 @@
 using Mediator;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using AyuPos.Web.Application.Common;
+using AyuPos.Web.Application.Common.Models;
 using AyuPos.Web.Domain.Entities;
 
 namespace AyuPos.Web.Infrastructure;

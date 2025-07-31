@@ -1,6 +1,6 @@
 using AyuPos.Web.Domain.Entities.Identity;
 
-namespace AyuPos.Web.Application.Common;
+namespace AyuPos.Web.Application.Common.Models;
 
 public class UserProfile
 {

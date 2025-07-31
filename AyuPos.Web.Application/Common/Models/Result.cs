@@ -1,4 +1,4 @@
-namespace AyuPos.Web.Application.Common;
+namespace AyuPos.Web.Application.Common.Models;
 
 public class Result
 {

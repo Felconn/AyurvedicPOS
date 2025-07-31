@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using AyuPos.Web.Application.Common;
+using AyuPos.Web.Application.Common.Models;
 using AyuPos.Web.Application.Interfaces;
 
 namespace AyuPos.Web.Api.Controllers;
