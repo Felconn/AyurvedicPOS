@@ -109,7 +109,7 @@ public class IdentityService : IIdentityService
     
     public async Task<Result> AdminResetUserPasswordAsync(string userId, string newPassword, CancellationToken cancellationToken = default)
     {
-        var isAdmin = _currentUserService.UserRoles().Any(x => x is RoleConstant.Admin or RoleConstant.SuperAdmin);
+        var isAdmin = await IsAdminUserAsync(cancellationToken);
         if (!isAdmin)
             return Result.Failure("Only administrators can reset user passwords");
 
@@ -154,7 +154,9 @@ public class IdentityService : IIdentityService
     public async Task<Result> DisableEnableUser(string userId, bool isDeactivate,
         CancellationToken cancellationToken = default)
     {
-        if (_currentUserService.UserRoles().Any(x => x != RoleConstant.Admin && x != RoleConstant.SuperAdmin))
+        var isAdmin = await IsAdminUserAsync(cancellationToken);
+        
+        if (!isAdmin)
             return Result.Failure("User haven't access for the function!");
 
         var user = await _userManager.Users
@@ -179,6 +181,23 @@ public class IdentityService : IIdentityService
     public async Task<Result> UpdateMyProfileAsync(UserProfile request, CancellationToken cancellationToken = default)
     {
         var user = await GetUserAsync(_currentUserService.UserId, cancellationToken);
+        user.ThrowIfNull("No user exists", null);
+        var personalData = user.UserPersonalData ?? new AppIdentityUserPersonalData(user.Id);
+        request.MatchTo(personalData);
+
+        await _userManager.UpdateAsync(user);
+        await _appDbContext.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+    
+    public async Task<Result> UpdateProfileByAdminAsync(string userId,UserProfile request, CancellationToken cancellationToken = default)
+    {
+        var isAdmin = await IsAdminUserAsync(cancellationToken);
+        
+        if (!isAdmin)
+            return Result.Failure("User haven't access for the function!");
+        
+        var user = await GetUserAsync(userId, cancellationToken);
         user.ThrowIfNull("No user exists", null);
         var personalData = user.UserPersonalData ?? new AppIdentityUserPersonalData(user.Id);
         request.MatchTo(personalData);
@@ -308,5 +327,19 @@ public class IdentityService : IIdentityService
         await _userManager.RemoveFromRoleAsync(selector.User, selector.Role);
         await _userManager.AddToRoleAsync(selector.User, role.Name);
         return Result.Success();
+    }
+    
+    private async Task<bool> IsAdminUserAsync(CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.UserId;
+        
+        var userRoles = await _userManager.Users
+            .Where(x => x.Id == userId)
+            .SelectMany(x => x.UserRoles.Select(y => y.Role.Name!))
+            .ToListAsync(cancellationToken: cancellationToken);
+        
+        if (!userRoles.Any(x => x is RoleConstant.Admin or RoleConstant.SuperAdmin))
+            return false;
+        return true;
     }
 }

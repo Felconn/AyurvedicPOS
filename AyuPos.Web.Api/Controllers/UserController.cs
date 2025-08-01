@@ -70,10 +70,10 @@ public class UserController : BaseController
         return Ok(result);
     }
 
-    [HttpPut("profile")]
-    public async Task<IActionResult> UpdateMyProfile([FromBody] UserProfile request, CancellationToken cancellationToken)
+    [HttpPut("{userId}/profile")]
+    public async Task<IActionResult> UpdateMyProfile(string userId,[FromBody] UserProfile request, CancellationToken cancellationToken)
     {
-        var result = await _identityService.UpdateMyProfileAsync(request, cancellationToken);
+        var result = await _identityService.UpdateProfileByAdminAsync(userId,request, cancellationToken);
         
         if (!result.Succeeded)
         {
