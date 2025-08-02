@@ -5,6 +5,8 @@ import { Box, CircularProgress } from '@mui/material';
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
+  // localStorage.removeItem("authToken"); localStorage.removeItem("userData");
+
   if (loading) {
     return (
       <Box

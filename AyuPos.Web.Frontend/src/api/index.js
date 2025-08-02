@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://myAppDomain.com',
+  baseURL: 'http://localhost:5054/api',
   // baseURL: process.env.REACT_APP_API_URL,
   timeout: 10000,
   headers: {
@@ -36,7 +36,7 @@ api.interceptors.response.use(
 
 // API endpoints
 export const authAPI = {
-  login: (credentials) => api.post('/auth/login', credentials),
+  login: (credentials) => api.post('/Auth/login', credentials),
   logout: () => api.post('/auth/logout'),
   refreshToken: () => api.post('/auth/refresh'),
   forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
@@ -44,12 +44,15 @@ export const authAPI = {
 };
 
 export const userAPI = {
-  getUsers: (params) => api.get('/users', { params }),
-  getUser: (id) => api.get(`/users/${id}`),
-  createUser: (userData) => api.post('/users', userData),
-  updateUser: (id, userData) => api.put(`/users/${id}`, userData),
-  deleteUser: (id) => api.delete(`/users/${id}`),
-  toggleUserStatus: (id) => api.patch(`/users/${id}/toggle-status`),
+  getUsers: (params) => api.get('/User', { params }),
+  updateUserStatus: (id, toggleData) => api.put(`/User/${id}/status`, toggleData),
+  updateUser: (id, userData) => api.put(`/User/profile/${id}`, userData),
+
+  // getUser: (id) => api.get(`/users/${id}`),
+  createUser: (userData) => api.post('/User/invite', userData),
+  // updateUser: (id, userData) => api.put(`/users/${id}`, userData),
+  // deleteUser: (id) => api.delete(`/users/${id}`),
+  // toggleUserStatus: (id) => api.patch(`/users/${id}/toggle-status`),
 };
 
 export const dashboardAPI = {

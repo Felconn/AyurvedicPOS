@@ -3,6 +3,9 @@ obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
+AyuPos.Web.Api/appsettings.Secret.json
+AyuPos.Web.Api/appsettings.json
+
 
 # macOS
 .DS_Store

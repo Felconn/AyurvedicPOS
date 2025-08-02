@@ -12,6 +12,7 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
+
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -19,29 +20,51 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     const userData = localStorage.getItem('userData');
-    
+
     if (token && userData) {
       setUser(JSON.parse(userData));
     }
     setLoading(false);
   }, []);
 
-const login = async (userId, password) => {
-  try {
-    const response = await authAPI.login({ userId, password });
 
-    const { token, user } = response.data;
+  const login = async (username, password) => {
+    try {
+      const response = await authAPI.login({ username, password });
+      const { accessToken, refreshToken } = response.data.tokens;
 
-    localStorage.setItem('authToken', token);
-    localStorage.setItem('userData', JSON.stringify(user));
-    setUser(user);
+      if (!accessToken) throw new Error('Access token missing from response');
 
-    return { success: true };
-  } catch (error) {
-    const message = error.response?.data?.message || 'Login failed';
-    return { success: false, error: message };
-  }
-};
+      localStorage.setItem('authToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+
+      // Decode user info from token if needed
+      const base64Url = accessToken.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const decodedPayload = JSON.parse(atob(base64));
+
+      const user = {
+        id: decodedPayload.sub,
+        name: decodedPayload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"],
+        role: decodedPayload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"]
+      };
+
+      console.log('accessToken:', accessToken);
+      console.log('user:', user);
+
+      // Save user object
+      localStorage.setItem('userData', JSON.stringify(user));
+      setUser(user);
+
+      console.log('Login successful:', user);
+
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Login failed';
+      return { success: false, error: message };
+    }
+  };
+
 
   const logout = () => {
     localStorage.removeItem('authToken');
