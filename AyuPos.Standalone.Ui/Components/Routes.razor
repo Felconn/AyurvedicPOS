@@ -1,6 +1,20 @@
-﻿<Router AppAssembly="@typeof(MauiProgram).Assembly">
+﻿@inject NavigationManager NavigationManager
+
+<Router AppAssembly="@typeof(MauiProgram).Assembly">
     <Found Context="routeData">
         <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)"/>
         <FocusOnNavigate RouteData="@routeData" Selector="h1"/>
     </Found>
 </Router>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Redirect to login if accessing root
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        if (uri.PathAndQuery == "/" || uri.PathAndQuery == "")
+        {
+            NavigationManager.NavigateTo("/login", replace: true);
+        }
+    }
+}

@@ -149,7 +149,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
-// Initialize database and seed data
+// Initialize database
 using (var scope = app.Services.CreateScope())
 {
     var databaseInitializer = scope.ServiceProvider.GetRequiredService<IDatabaseInitializer>();
@@ -157,21 +157,34 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
+app.UseHttpsRedirection();
+
+app.UseCors("AllowSpecificOrigins");
+
+// Enable serving static files (React app)
+app.UseStaticFiles();
+
+// Configure Swagger (accessible at /swagger)
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "POS System API v1");
+    c.RoutePrefix = "swagger"; // Swagger at /swagger instead of root
 });
-
-app.UseHttpsRedirection();
-
-app.UseCors("AllowSpecificOrigins");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseMiddleware<ErrorHandlerMiddleware>();
 
+// Map API controllers
 app.MapControllers();
+
+// Fallback to React app for any non-API routes
+app.MapFallback(async context =>
+{
+    context.Response.ContentType = "text/html";
+    await context.Response.SendFileAsync(Path.Combine(app.Environment.WebRootPath, "index.html"));
+});
 
 app.Run();

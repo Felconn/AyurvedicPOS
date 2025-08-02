@@ -1,0 +1,173 @@
+@page "/login"
+@using AyuPos.Standalone.Ui.Components.Layout
+@layout LoginLayout
+@inject NavigationManager Navigation
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="logo-container">
+            <div class="logo">
+                <img src="images/logo.png" alt="Logo" class="logo-image"/>
+            </div>
+        </div>
+
+        <h1 class="welcome-title">Welcome to BrandName!</h1>
+        <p class="welcome-subtitle">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+            incididunt ut</p>
+
+        <div class="form-container">
+            <div class="input-group">
+                <input type="text" @bind="userId" placeholder="User ID" class="form-input"/>
+            </div>
+
+            <div class="input-group">
+                <input type="password" @bind="password" placeholder="Password" class="form-input"/>
+            </div>
+
+            <button class="login-button" @onclick="HandleLogin">Log in</button>
+
+            <a href="#" class="forgot-password">Forgot Password</a>
+        </div>
+
+        <div class="footer">
+            <span>Powered by Infocon Software Solutions</span>
+        </div>
+    </div>
+</div>
+
+<style>
+    .login-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f5f5f5;
+        padding: 20px;
+    }
+
+    .login-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        width: 100%;
+        max-width: 400px;
+        text-align: center;
+    }
+
+    .logo-container {
+        margin-bottom: 30px;
+    }
+
+    .logo {
+        width: 60px;
+        height: 60px;
+        background-color: #f0f0f0;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: 600;
+        color: #333;
+        overflow: hidden;
+        padding: 10px;
+    }
+
+    .logo-image {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .welcome-title {
+        color: #5B5EF5;
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .welcome-subtitle {
+        color: #666;
+        font-size: 14px;
+        line-height: 1.5;
+        margin-bottom: 30px;
+    }
+
+    .form-container {
+        width: 100%;
+    }
+
+    .input-group {
+        margin-bottom: 15px;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.3s;
+    }
+
+    .form-input:focus {
+        border-color: #5B5EF5;
+    }
+
+    .form-input::placeholder {
+        color: #999;
+    }
+
+    .login-button {
+        width: 100%;
+        padding: 12px;
+        background-color: #5B5EF5;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        margin-top: 20px;
+        margin-bottom: 15px;
+        transition: background-color 0.3s;
+    }
+
+    .login-button:hover {
+        background-color: #4B4EE5;
+    }
+
+    .forgot-password {
+        color: #5B5EF5;
+        text-decoration: none;
+        font-size: 14px;
+        margin-top: 10px;
+        display: inline-block;
+    }
+
+    .forgot-password:hover {
+        text-decoration: underline;
+    }
+
+    .footer {
+        margin-top: 40px;
+        font-size: 12px;
+        color: #999;
+    }
+</style>
+
+@code {
+    private string userId = "";
+    private string password = "";
+
+    private async Task HandleLogin()
+    {
+        if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(password))
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+}

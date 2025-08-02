@@ -20,4 +20,48 @@
     <ProjectReference Include="..\AyuPos.Web.Infrastructure\AyuPos.Web.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
+  <!-- Add these build targets -->
+  <Target Name="CheckNodeInstallation" BeforeTargets="PreBuildEvent">
+    <Exec Command="node --version" ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
+    </Exec>
+    <Error Condition="'$(ErrorCode)' != '0'" Text="Node.js is required to build this project." />
+  </Target>
+
+  <Target Name="BuildReactApp" BeforeTargets="Build">
+    <!-- Define the frontend path -->
+    <PropertyGroup>
+      <FrontendPath>$(ProjectDir)..\AyuPos.Web.Frontend</FrontendPath>
+    </PropertyGroup>
+
+    <!-- Install npm packages if needed -->
+    <Exec Command="npm install"
+          WorkingDirectory="$(FrontendPath)"
+          Condition="!Exists('$(FrontendPath)\node_modules')" />
+
+    <!-- Build React app -->
+    <Exec Command="npm run build"
+          WorkingDirectory="$(FrontendPath)" />
+
+    <!-- Clean wwwroot first -->
+    <RemoveDir Directories="$(ProjectDir)wwwroot" />
+
+    <!-- Copy build output to wwwroot (Vite outputs to dist folder) -->
+    <ItemGroup>
+      <ReactBuildFiles Include="$(FrontendPath)\dist\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ReactBuildFiles)"
+          DestinationFiles="@(ReactBuildFiles->'$(ProjectDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+
+  <!-- Clean React build files -->
+  <Target Name="CleanReactApp" BeforeTargets="Clean">
+    <RemoveDir Directories="$(ProjectDir)wwwroot" />
+    <RemoveDir Directories="$(ProjectDir)..\AyuPos.Web.Frontend\dist" />
+  </Target>
+
 </Project>
