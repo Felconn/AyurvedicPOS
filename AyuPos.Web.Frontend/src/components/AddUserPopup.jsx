@@ -15,10 +15,11 @@ import {
 import { Visibility, VisibilityOff, WidthFull } from '@mui/icons-material';
 import PopupLayout from '../layouts/PopupLayout';
 
-const AddUserPopup = ({ open, onClose, onSave }) => {
+const AddUserPopup = ({ open, onClose, onSave, existingUsers = [] }) => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
+    nic: '',
     mobile: '',
     role: '',
     password: '',
@@ -28,15 +29,31 @@ const AddUserPopup = ({ open, onClose, onSave }) => {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordChecks, setPasswordChecks] = useState({
-    length: false,
-    upper: false,
-    lower: false,
-    number: false,
-    special: false,
-  });
 
   const roles = ['Inventory Manager', 'Compounder', 'Cashier'];
+
+  // Generate next user ID in E001, E002 format
+  const generateNextUserId = () => {
+    if (!existingUsers || existingUsers.length === 0) {
+      return 'E001';
+    }
+
+    // Extract numeric parts from existing user IDs
+    const existingNumbers = existingUsers
+      .map(user => {
+        const userId = user.userId || user.userNameId || '';
+        const match = userId.match(/^E(\d+)$/);
+        return match ? parseInt(match[1], 10) : 0;
+      })
+      .filter(num => num > 0);
+
+    // Find the highest number and add 1
+    const maxNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0;
+    const nextNumber = maxNumber + 1;
+
+    // Format with leading zeros (E001, E002, etc.)
+    return `E${nextNumber.toString().padStart(3, '0')}`;
+  };
 
   const handleInputChange = (field) => (event) => {
     const value = event.target.value;
@@ -49,12 +66,19 @@ const AddUserPopup = ({ open, onClose, onSave }) => {
 
   const validateForm = () => {
     const newErrors = {};
+
     if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
     if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
 
+    if (!formData.nic.trim()) {
+      newErrors.nic = 'NIC is required';
+    } else if (!/^(\d{9}[VXvx]|\d{12})$/.test(formData.nic.replace(/\s/g, ''))) {
+      newErrors.nic = 'Please enter a valid NIC (9 digits + V/X or 12 digits)';
+    }
+
     if (!formData.mobile.trim()) {
       newErrors.mobile = 'Mobile number is required';
-    } else if (!/^\+94\s\d{2}\s\d{3}\s\d{4}$/.test(formData.mobile)) {
+    } else if (!/^\+94\s\d{9}$/.test(formData.mobile)) {
       newErrors.mobile = 'Please enter valid mobile number (+94 XX XXX XXXX)';
     }
 
@@ -78,11 +102,26 @@ const AddUserPopup = ({ open, onClose, onSave }) => {
 
   const handleSave = () => {
     if (validateForm()) {
-      const userNameId = `${formData.firstName.toLowerCase()}${Math.floor(Math.random() * 1000)}`;
+      const userId = generateNextUserId();
       const newUser = {
-        ...formData,
-        userNameId,
         id: Date.now(),
+        userId: userId,
+        personalData: {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          nic: formData.nic,
+          phoneNumber: formData.mobile,
+        },
+        roles: [formData.role],
+        deactivationStatus: false,
+        password: formData.password,
+        // For backward compatibility
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        nic: formData.nic,
+        phoneNumber: formData.mobile,
+        role: formData.role,
+        userNameId: userId,
         status: 'Active',
       };
       onSave(newUser);
@@ -94,6 +133,7 @@ const AddUserPopup = ({ open, onClose, onSave }) => {
     setFormData({
       firstName: '',
       lastName: '',
+      nic: '',
       mobile: '',
       role: '',
       password: '',
@@ -118,30 +158,20 @@ const AddUserPopup = ({ open, onClose, onSave }) => {
     setFormData((prev) => ({ ...prev, mobile: formatted }));
   };
 
-  const validatePasswordStrength = (password) => {
-    setPasswordChecks({
-      length: password.length >= 8,
-      upper: /[A-Z]/.test(password),
-      lower: /[a-z]/.test(password),
-      number: /[0-9]/.test(password),
-      special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
-    });
-  };
+  const handleNicChange = (event) => {
+    let value = event.target.value.toUpperCase();
+    // Remove any spaces and limit to appropriate length
+    value = value.replace(/\s/g, '');
 
-  const handlePasswordChange = (field) => (event) => {
-    const value = event.target.value;
-
-    setFormData((prev) => ({ ...prev, [field]: value }));
-
-    if (field === 'password') {
-      validatePasswordStrength(value);
-    }
-
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: '' }));
+    // Limit length based on format (9+1 for old format, 12 for new format)
+    if (value.length <= 10 && /^\d{0,9}[VX]?$/.test(value)) {
+      // Old format: 9 digits + V/X
+      setFormData((prev) => ({ ...prev, nic: value }));
+    } else if (value.length <= 12 && /^\d{0,12}$/.test(value)) {
+      // New format: 12 digits
+      setFormData((prev) => ({ ...prev, nic: value }));
     }
   };
-
 
   return (
     <PopupLayout open={open} onClose={handleClose} title="Add New User" maxWidth="md">
@@ -177,6 +207,26 @@ const AddUserPopup = ({ open, onClose, onSave }) => {
               <TextField
                 fullWidth
                 size="small"
+                label="NIC"
+                variant="outlined"
+                value={formData.nic}
+                onChange={handleNicChange}
+                placeholder="123456789V or 123456789012"
+                error={!!errors.nic}
+                helperText={errors.nic}
+                InputLabelProps={{
+                  sx: {
+                    fontSize: '0.8rem',
+                    pt: 0.2,
+                  },
+                }}
+              />
+            </Box>
+
+            <Box mt={3}>
+              <TextField
+                fullWidth
+                size="small"
                 label="Mobile Number"
                 variant="outlined"
                 value={formData.mobile}
@@ -194,6 +244,55 @@ const AddUserPopup = ({ open, onClose, onSave }) => {
             </Box>
 
             <Box mt={3}>
+              <FormControl fullWidth size="small" error={!!errors.role}>
+                <InputLabel sx={{
+                  fontSize: '0.8rem',
+                  pt: 0.2,
+                }}>
+                  Role
+                </InputLabel>
+                <Select
+                  value={formData.role}
+                  onChange={handleInputChange('role')}
+                  label="Role"
+                >
+                  {roles.map((role) => (
+                    <MenuItem key={role} value={role}>
+                      {role}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {errors.role && (
+                  <Typography
+                    variant="caption"
+                    sx={{ color: '#d32f2f', fontSize: '0.75rem', mt: 0.5 }}
+                  >
+                    {errors.role}
+                  </Typography>
+                )}
+              </FormControl>
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} sm={6} sx={{ width: '49%' }}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Last Name"
+              variant="outlined"
+              value={formData.lastName}
+              onChange={handleInputChange('lastName')}
+              error={!!errors.lastName}
+              helperText={errors.lastName}
+              InputLabelProps={{
+                sx: {
+                  fontSize: '0.8rem',
+                  pt: 0.2,
+                },
+              }}
+            />
+
+            <Box mt={3}>
               <TextField
                 fullWidth
                 size="small"
@@ -201,7 +300,7 @@ const AddUserPopup = ({ open, onClose, onSave }) => {
                 type={showPassword ? 'text' : 'password'}
                 variant="outlined"
                 value={formData.password}
-                onChange={handlePasswordChange('password')}
+                onChange={handleInputChange('password')}
                 error={!!errors.password}
                 helperText={errors.password}
                 InputProps={{
@@ -229,6 +328,12 @@ const AddUserPopup = ({ open, onClose, onSave }) => {
                 }}
               />
             </Box>
+
+            {/* <Box mt={0} ml={1}>
+              <Typography variant="caption" sx={{ color: 'gray' }}>
+                Password must be at least 8 characters long
+              </Typography>
+            </Box> */}
 
             <Box mt={3}>
               <TextField
@@ -267,74 +372,6 @@ const AddUserPopup = ({ open, onClose, onSave }) => {
               />
             </Box>
           </Grid>
-
-          <Grid item xs={12} sm={6} sx={{ width: '49%' }}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Last Name"
-              variant="outlined"
-              value={formData.lastName}
-              onChange={handleInputChange('lastName')}
-              error={!!errors.lastName}
-              helperText={errors.lastName}
-              InputLabelProps={{
-                sx: {
-                  fontSize: '0.8rem',
-                  pt: 0.2,
-                },
-              }}
-            />
-
-            <Box mt={3}>
-              <FormControl fullWidth size="small" error={!!errors.role}>
-                <InputLabel sx={{
-                  fontSize: '0.8rem',
-                  pt: 0.2,
-                }}>
-                  Role
-                </InputLabel>
-                <Select
-                  value={formData.role}
-                  onChange={handleInputChange('role')}
-                  label="Role"
-                >
-                  {roles.map((role) => (
-                    <MenuItem key={role} value={role}>
-                      {role}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {errors.role && (
-                  <Typography
-                    variant="caption"
-                    sx={{ color: '#d32f2f', fontSize: '0.75rem', mt: 0.5 }}
-                  >
-                    {errors.role}
-                  </Typography>
-                )}
-              </FormControl>
-            </Box>
-
-            <Box mt={3.5} ml={1} display="flex" flexWrap="wrap" gap={1}>
-              {!passwordChecks.length && (
-                <Typography variant="caption" sx={{ color: 'gray' }}>• At least 8 characters</Typography>
-              )}
-              {!passwordChecks.upper && (
-                <Typography variant="caption" sx={{ color: 'gray' }}>• One uppercase (A–Z)</Typography>
-              )}
-              {!passwordChecks.lower && (
-                <Typography variant="caption" sx={{ color: 'gray' }}>• One lowercase (a–z)</Typography>
-              )}
-              {!passwordChecks.number && (
-                <Typography variant="caption" sx={{ color: 'gray' }}>• One number (0–9)</Typography>
-              )}
-              {!passwordChecks.special && (
-                <Typography variant="caption" sx={{ color: 'gray' }}>• One special (!@#$...)</Typography>
-              )}
-            </Box>
-            
-          </Grid>
         </Grid>
 
         {/* Action Buttons */}
@@ -343,14 +380,11 @@ const AddUserPopup = ({ open, onClose, onSave }) => {
             display: 'flex',
             justifyContent: 'flex-start',
             gap: 2,
-            mt: 4,
-            pt: 3,
-            pb: 6,
-            borderTop: '1px solid #e5e7eb',
+            py: 3,
           }}
         >
           <Button variant="contained" onClick={handleSave} size="small" sx={{
-            bgcolor: '#6366f1', width: '9rem', '&:focus': {
+            bgcolor: '#6366f1', width: '9rem', borderRadius: 0.5, '&:focus': {
               outline: 'none',
             },
             '&:active': {
@@ -359,8 +393,9 @@ const AddUserPopup = ({ open, onClose, onSave }) => {
           }}>
             Save
           </Button>
-          <Button variant="outlined" onClick={handleClose} size="small" sx={{
-            width: '9rem', '&:focus': {
+          <Button variant="contained" onClick={handleClose} size="small" sx={{
+            bgcolor: '#aa0003',
+            width: '9rem', borderRadius: 0.5, '&:focus': {
               outline: 'none',
             },
             '&:active': {

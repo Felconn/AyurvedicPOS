@@ -8,10 +8,10 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 
-const PopupLayout = ({ 
-  open = false, 
-  onClose, 
-  children, 
+const PopupLayout = ({
+  open = false,
+  onClose,
+  children,
   maxWidth = 'sm',
   fullWidth = true,
   showHeader = true,
@@ -46,20 +46,28 @@ const PopupLayout = ({
           sx={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
             p: 3,
             pb: 2,
             bgcolor: 'white',
-            borderBottom: '1px solid #f3f4f6',
             position: 'relative',
           }}
         >
-          {/* Logo and Title Section */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Centered Avatar (absolute positioning) */}
+          <Box
+            sx={{
+              position: 'absolute',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              pt: 5,
+            }}
+          >
             <Avatar
               sx={{
-                width: 40,
-                height: 40,
+                width: 60,
+                height: 60,
                 bgcolor: 'primary.main',
                 fontSize: '1.2rem',
                 fontWeight: 'bold',
@@ -67,38 +75,13 @@ const PopupLayout = ({
             >
               B
             </Avatar>
-            <Box>
-              <Typography
-                variant="h6"
-                component="h2"
-                id="popup-dialog-title"
-                sx={{
-                  fontWeight: 600,
-                  color: '#1f2937',
-                  fontSize: '1.25rem',
-                  lineHeight: 1.2,
-                }}
-              >
-                {title || 'BrandName'}
-              </Typography>
-              {title && (
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: '#6b7280',
-                    fontSize: '0.75rem',
-                  }}
-                >
-                  POS System
-                </Typography>
-              )}
-            </Box>
           </Box>
 
-          {/* Close Button */}
+          {/* Close Button (pushed to right with margin-left: auto) */}
           <IconButton
             onClick={onClose}
             sx={{
+              marginLeft: 'auto', // This pushes it to the right
               color: '#6b7280',
               bgcolor: 'transparent',
               width: 32,
@@ -125,8 +108,9 @@ const PopupLayout = ({
       {/* Content Section */}
       <DialogContent
         sx={{
+          mt: 5,
           p: 0,
-          bgcolor: '#f9fafb',
+          bgcolor: '#ffffffff',
           minHeight: showHeader || showFooter ? 'auto' : 400,
           position: 'relative',
           overflow: 'hidden',
@@ -134,9 +118,9 @@ const PopupLayout = ({
       >
         <Box
           sx={{
-            p: 3,
+            p: 6,
             minHeight: 300,
-            bgcolor: '#f9fafb',
+            bgcolor: '#ffffffff',
           }}
         >
           {children}
@@ -150,10 +134,20 @@ const PopupLayout = ({
             p: 2,
             textAlign: 'center',
             bgcolor: 'white',
-            borderTop: '1px solid #f3f4f6',
             mt: 'auto',
+            pb: 3,
           }}
         >
+          <Box
+            component="hr"
+            sx={{
+              width: '92%', 
+              border: 'none',
+              height: '1px',
+              backgroundColor: '#e5e7eb',
+              my: 2, 
+            }}
+          />
           <Typography
             variant="caption"
             sx={{
