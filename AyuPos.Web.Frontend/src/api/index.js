@@ -46,13 +46,9 @@ export const authAPI = {
 export const userAPI = {
   getUsers: (params) => api.get('/User', { params }),
   updateUserStatus: (id, toggleData) => api.put(`/User/${id}/status`, toggleData),
-  updateUser: (id, userData) => api.put(`/User/profile/${id}`, userData),
-
-  // getUser: (id) => api.get(`/users/${id}`),
+  updateUserRole: (id, userRole) => api.put(`/User/${id}/role`, userRole),
+  updateUser: (id, userData) => api.put(`/User/${id}/profile/`, userData),
   createUser: (userData) => api.post('/User/invite', userData),
-  // updateUser: (id, userData) => api.put(`/users/${id}`, userData),
-  // deleteUser: (id) => api.delete(`/users/${id}`),
-  // toggleUserStatus: (id) => api.patch(`/users/${id}/toggle-status`),
 };
 
 export const dashboardAPI = {

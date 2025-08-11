@@ -34,90 +34,6 @@ import {
 import { userAPI } from '../api/index';
 import AddUserPopup from '../components/AddUserPopup';
 
-// Mock data - replace with actual API calls
-const mockUsers = [
-  {
-    id: 1,
-    firstName: 'First Name',
-    lastName: 'Last Name',
-    userNameId: 'Name+Num',
-    nic: '12345678912V',
-    mobile: '+94 76 844 0179',
-    role: 'Inventory Manager',
-    status: 'Active',
-  },
-  {
-    id: 2,
-    firstName: 'First Name',
-    lastName: 'Last Name',
-    userNameId: 'Name+Num',
-    nic: '987654321V',
-    mobile: '+94 76 844 0179',
-    role: 'Compounder',
-    status: 'Inactive',
-  },
-  {
-    id: 3,
-    firstName: 'First Name',
-    lastName: 'Last Name',
-    userNameId: 'Name+Num',
-    nic: '123456789V',
-    mobile: '+94 76 844 0179',
-    role: 'Inventory Manager',
-    status: 'Active',
-  },
-  {
-    id: 4,
-    firstName: 'First Name',
-    lastName: 'Last Name',
-    userNameId: 'Name+Num',
-    nic: '987654321V',
-    mobile: '+94 76 844 0179',
-    role: 'Compounder',
-    status: 'Inactive',
-  },
-  {
-    id: 5,
-    firstName: 'First Name',
-    lastName: 'Last Name',
-    userNameId: 'Name+Num',
-    nic: '12345678912V',
-    mobile: '+94 76 844 0179',
-    role: 'Inventory Manager',
-    status: 'Active',
-  },
-  {
-    id: 6,
-    firstName: 'First Name',
-    lastName: 'Last Name',
-    userNameId: 'Name+Num',
-    nic: '987654321V',
-    mobile: '+94 76 844 0179',
-    role: 'Compounder',
-    status: 'Inactive',
-  },
-  {
-    id: 7,
-    firstName: 'First Name',
-    lastName: 'Last Name',
-    userNameId: 'Name+Num',
-    nic: '123456789V',
-    mobile: '+94 76 844 0179',
-    role: 'Inventory Manager',
-    status: 'Active',
-  },
-  {
-    id: 8,
-    firstName: 'First Name',
-    lastName: 'Last Name',
-    userNameId: 'Name+Num',
-    nic: '987654321V',
-    mobile: '+94 76 844 0179',
-    role: 'Compounder',
-    status: 'Inactive',
-  },
-];
-
 const ROLE_OPTIONS = ['Inventory Manager', 'Compounder', 'Cashier'];
 
 const UserManagementPage = () => {
@@ -128,12 +44,11 @@ const UserManagementPage = () => {
   const [editingUsers, setEditingUsers] = useState({});
   const [editFormData, setEditFormData] = useState({});
   const [addUserPopupOpen, setAddUserPopupOpen] = useState(false);
+  const [roleUpdatingUsers, setRoleUpdatingUsers] = useState({}); 
   const usersPerPage = 7;
 
-  // API call
   useEffect(() => {
     setTimeout(() => {
-      // setUsers(mockUsers);
       setLoading(false);
 
       userAPI.getUsers()
@@ -153,16 +68,13 @@ const UserManagementPage = () => {
 
   const handleStatusToggle = async (userId) => {
     try {
-      // Find the current user
       const user = users.find(u => u.id === userId);
       if (!user) return;
 
-      // Prepare the toggle data
       const toggleData = {
-        isDeactivate: !user.deactivationStatus // Toggle the current status
+        isDeactivate: !user.deactivationStatus 
       };
 
-      // Call the API
       await userAPI.updateUserStatus(userId, toggleData);
 
       // Update the local state
@@ -175,7 +87,39 @@ const UserManagementPage = () => {
       console.log('User status updated successfully');
     } catch (error) {
       console.error('Error updating user status:', error);
-      // You might want to show a toast notification here
+    }
+  };
+
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      setRoleUpdatingUsers(prev => ({ ...prev, [userId]: true }));
+
+      const roleUpdateData = {
+        roles: [newRole]
+      };
+
+      await userAPI.updateUserRole(userId, roleUpdateData);
+
+      // Update the local state
+      setUsers(prev => prev.map(user =>
+        user.id === userId
+          ? {
+            ...user,
+            roles: [newRole], 
+            role: newRole, 
+          }
+          : user
+      ));
+
+      console.log('User role updated successfully');
+    } catch (error) {
+      console.error('Error updating user role:', error);
+    } finally {
+      setRoleUpdatingUsers(prev => {
+        const updated = { ...prev };
+        delete updated[userId];
+        return updated;
+      });
     }
   };
 
@@ -188,7 +132,6 @@ const UserManagementPage = () => {
         lastName: user.personalData?.lastName || user.lastName,
         mobile: user.personalData?.phoneNumber || user.mobile,
         nic: user.personalData?.nic || user.nic,
-        role: user.roles?.[0] || user.role,
       }
     }));
   };
@@ -210,16 +153,13 @@ const UserManagementPage = () => {
     try {
       const formData = editFormData[userId];
 
-      // Prepare the update data in the correct format
       const updateData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         nic: formData.nic,
         phoneNumber: formData.mobile,
-        // Note: The role update might need to be handled separately if it's not part of this endpoint
       };
 
-      // Call the API to update user details
       await userAPI.updateUser(userId, updateData);
 
       // Update the local state
@@ -234,7 +174,6 @@ const UserManagementPage = () => {
               phoneNumber: formData.mobile,
               nic: formData.nic,
             },
-            // For backward compatibility with mock data
             firstName: formData.firstName,
             lastName: formData.lastName,
             mobile: formData.mobile,
@@ -247,7 +186,7 @@ const UserManagementPage = () => {
       console.log('User details updated successfully');
     } catch (error) {
       console.error('Error updating user details:', error);
-      // You might want to show a toast notification here
+      toast.success('Error updating user details');
     }
   };
 
@@ -262,9 +201,7 @@ const UserManagementPage = () => {
   };
 
   const handlePasswordReset = (userId) => {
-    // Handle password reset logic here
     console.log('Password reset for user:', userId);
-    // You can show a confirmation dialog or directly call an API
   };
 
   const handleAddUser = () => {
@@ -277,33 +214,18 @@ const UserManagementPage = () => {
 
 const handleSaveNewUser = async (newUserData) => {
   try {
-    // Make API call to create the new user
     const response = await userAPI.createUser(newUserData);
-
-    console.log('New user data:', newUserData);
-    
-    // If the API call is successful, add the new user to the local state
-    // Use response.data if the API returns the created user object
     setUsers(prev => [newUserData, ...prev]);
     userAPI.getUsers();
-    
-    // Close the popup
     setAddUserPopupOpen(false);
     
-    // Optional: Show success message
     console.log('New user created successfully:', response.data);
-    
-    // You might want to add a toast notification here:
-    // toast.success('User created successfully');
+    toast.success('User created successfully');
     
   } catch (error) {
     console.error('Error creating user:', error);
-    
-    // Optional: Show error message
-    // toast.error('Failed to create user');
-    
-    // You might want to keep the popup open if creation fails
-    // setAddUserPopupOpen(true);
+    toast.error('Failed to create user');
+    setAddUserPopupOpen(true);
   }
 };
 
@@ -691,40 +613,40 @@ const handleSaveNewUser = async (newUserData) => {
                         minWidth: '160px',
                         maxWidth: '160px',
                       }}>
-                        {editingUsers[user.id] ? (
-                          <FormControl size="small" sx={{ width: '180px' }}>
-                            <Select
-                              value={editFormData[user.id]?.role || ''}
-                              onChange={(e) => handleFieldChange(user.id, 'role', e.target.value)}
-                            >
-                              {ROLE_OPTIONS.map((role) => (
-                                <MenuItem key={role} value={role}>
-                                  {role}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        ) : (
-                          <Box
+                        {/* Role is now always a dropdown, independent of edit mode */}
+                        <FormControl size="small" sx={{ width: '150px' }}>
+                          <Select
+                            value={user.roles?.[0] || user.role || ''}
+                            onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                            disabled={roleUpdatingUsers[user.id]} // Disable while updating
                             sx={{
-                              display: 'inline-flex',
-                              px: 2,
-                              py: 0.5,
-                              borderRadius: 1,
-                              fontSize: '0.75rem',
-                              fontWeight: 500,
-                              bgcolor: `${getRoleColor(user.roles?.[0] || user.role)}15`,
-                              color: getRoleColor(user.roles?.[0] || user.role),
-                              border: `1px solid ${getRoleColor(user.roles?.[0] || user.role)}30`,
-                              maxWidth: '100%',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
+                              fontSize: '0.875rem',
+                              '& .MuiSelect-select': {
+                                py: 1,
+                                bgcolor: `${getRoleColor(user.roles?.[0] || user.role)}08`,
+                                color: getRoleColor(user.roles?.[0] || user.role),
+                                fontWeight: 500,
+                                border: `1px solid ${getRoleColor(user.roles?.[0] || user.role)}30`,
+                                borderRadius: 1,
+                              },
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                border: 'none',
+                              },
+                              '&:hover .MuiOutlinedInput-notchedOutline': {
+                                border: 'none',
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                border: `1px solid ${getRoleColor(user.roles?.[0] || user.role)}`,
+                              },
                             }}
                           >
-                            {user.roles?.[0] || user.role}
-                          </Box>
-                        )}
+                            {ROLE_OPTIONS.map((role) => (
+                              <MenuItem key={role} value={role}>
+                                {role}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
                       </TableCell>
                       <TableCell sx={{
                         py: 2,
