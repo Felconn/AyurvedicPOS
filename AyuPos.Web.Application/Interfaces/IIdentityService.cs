@@ -21,5 +21,5 @@ public interface IIdentityService
     Task<TokenResponse> GenerateTokenFromRefreshTokenAsync(string refreshToken,CancellationToken cancellationToken = default);
     Task<GetUsersResponse?> GetMyProfileAsync(CancellationToken cancellationToken = default);
     Task<List<GetUsersResponse>> GetUsersByRoleAsync(string role,CancellationToken cancellationToken = default);
-    Task<Result> UpdateUsersRoleAsync(RoleChangeRequest roleChangeRequest);
+    Task<Result> UpdateUsersRoleAsync(string userId,RoleChangeRequest roleChangeRequest);
 }

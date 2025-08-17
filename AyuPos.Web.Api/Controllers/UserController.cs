@@ -96,10 +96,10 @@ public class UserController : BaseController
         return Ok(result);
     }
 
-    [HttpPut("role")]
-    public async Task<IActionResult> UpdateUserRole([FromBody] RoleChangeRequest request)
+    [HttpPut("{userId}/role")]
+    public async Task<IActionResult> UpdateUserRole(string userId,[FromBody] RoleChangeRequest request)
     {
-        var result = await _identityService.UpdateUsersRoleAsync(request);
+        var result = await _identityService.UpdateUsersRoleAsync(userId,request);
         
         if (!result.Succeeded)
         {

@@ -306,11 +306,11 @@ public class IdentityService : IIdentityService
     //     
     // }
 
-    public async Task<Result> UpdateUsersRoleAsync(RoleChangeRequest roleChangeRequest)
+    public async Task<Result> UpdateUsersRoleAsync(string userId,RoleChangeRequest roleChangeRequest)
     {
         var selector = await _userManager.Users
             .AsSingleQuery()
-            .Where(x => x.Id == roleChangeRequest.UserId)
+            .Where(x => x.Id == userId)
             .Include(x => x.UserRoles)!
             .ThenInclude(x => x.Role)
             .Select(x => new

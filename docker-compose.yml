@@ -11,8 +11,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:80
-      # Add your database connection string here
-      # - ConnectionStrings__DefaultConnection=Server=db;Database=AyuPosDb;User=sa;Password=YourPassword123!;TrustServerCertificate=true
+      # PostgreSQL connection string
+      - ConnectionStrings__DefaultConnection=Host=db;Database=ayupos_db;Username=postgres;Password=YourPassword123!
     depends_on:
       - db
     volumes:
@@ -25,20 +25,21 @@ services:
       retries: 3
 
   db:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: postgres:15-alpine
     environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=YourPassword123!
+      - POSTGRES_DB=ayupos_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=YourPassword123!
     ports:
-      - "1433:1433"
+      - "5432:5432"
     volumes:
-      - sqlserver_data:/var/opt/mssql
+      - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourPassword123! -Q 'SELECT 1'"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 30s
       timeout: 10s
       retries: 3
 
 volumes:
-  sqlserver_data:
+  postgres_data:
