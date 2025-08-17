@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
+using AyuPos.Standalone.Ui.Common;
 
 namespace AyuPos.Standalone.Ui;
 
@@ -13,11 +15,33 @@ public static class MauiProgram
 
         builder.Services.AddMauiBlazorWebView();
 
+        ConfigureDatabase(builder.Services);
+
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
         builder.Logging.AddDebug();
 #endif
 
-        return builder.Build();
+        var app = builder.Build();
+        
+        InitializeDatabase(app.Services);
+        
+        return app;
+    }
+
+    private static void ConfigureDatabase(IServiceCollection services)
+    {
+        var dbPath = Path.Combine(FileSystem.AppDataDirectory, "ayupos.db");
+        
+        services.AddDbContext<AppDbContext>(options =>
+            options.UseSqlite($"Data Source={dbPath}"));
+    }
+
+    private static void InitializeDatabase(IServiceProvider services)
+    {
+        using var scope = services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        
+        context.Database.EnsureCreated();
     }
 }
